@@ -24,6 +24,8 @@ DB_USER=${POSTGRES_USER:=postgres}
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_DB:=newsletter}"
 DB_PORT="${POSTGRES_PORT:=5432}"
+SKIP_DOCKER="${SKIP_DOCKER:=true}"
+
 
 # docker
 if [[ -z "${SKIP_DOCKER}" ]]
@@ -36,19 +38,18 @@ docker run \
 -d postgres \
 postgres -N 1000
 fi
-sleep 1000
+
 # Keep pinging Postgres until it's ready to accept commands
 export PGPASSWORD="${DB_PASSWORD}"
+# psql -h "localhost" -U "postgres" -p "5432" -d "postgres" -c '\q'
 until psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q'; do
->&2 echo "Postgres is still unavailable - sleeping"
-sleep 1
+    >&2 echo "Postgres is still unavailable - sleeping"
 done
 >&2 echo "Postgres is up and running on port ${DB_PORT}!"
-sleep 1
 
 export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
 sqlx database create
 sqlx migrate run
 
+
 >&2 echo "Postgres has been migrated, ready to go!"
-sleep 10
